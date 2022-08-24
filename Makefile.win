@@ -1,0 +1,47 @@
+ASM=nasm
+
+SRC_DIR=C:\Users\covic\OS\src
+BUILD_DIR=C:\Users\covic\OS\build
+
+.PHONY: all floppy_image kernel bootloader clean always
+
+#
+# Floppy Image
+#
+floppy_image: $(BUILD_DIR)\main_floppy.img
+
+$(BUILD_DIR)\main_floppy.img: bootloader kernel
+	dd if=\dev\zero of=$(BUILD_DIR)\main_floppy.img bs=512 count=2880
+	dd if=$(BUILD_DIR)\bootloader.bin of=$(BUILD_DIR)\main_floppy.img conv=notrunc
+
+
+	copy $(BUILD_DIR)\main.bin $(BUILD_DIR)\main_floppy.img
+	fsutil file setEOF $(BUILD_DIR)\main_floppy.img 1440
+
+#
+# Bootloader
+#
+bootloader: $(BUILD_DIR)\bootloader.bin
+
+$(BUILD_DIR)\bootloader.bin: always
+	$(ASM) $(SRC_DIR)\bootloader\boot.asm -f bin -o $(BUILD_DIR)\bootloader.bin
+
+#
+# Kernel
+#
+kernel: $(BUILD_DIR)\kernel.bin
+
+$(BUILD_DIR)\kernel.bin: always
+	$(ASM) $(SRC_DIR)\kernel\main.asm -f bin -o $(BUILD_DIR)\kernel.bin
+
+#
+# Always
+#
+always:
+	if exist $(BUILD_DIR) (echo "exists") else (mkdir $(BUILD_DIR))
+
+#
+# Clean
+#
+clean:
+	rm -rf $(BUILD_DIR)\*
